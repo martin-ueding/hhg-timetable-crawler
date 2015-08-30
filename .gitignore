@@ -1,0 +1,13 @@
+*-blx.bib
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.htm
+*.log
+*.out
+*.pdf
+*.run.xml
+__pycache__
+hhg.sqlite
