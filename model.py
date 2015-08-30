@@ -30,6 +30,7 @@ class Subject(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
+    interesting = Column(Integer, default=1)
 
 class Form(Base):
     __tablename__ = 'forms'

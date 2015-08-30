@@ -135,9 +135,53 @@ def main():
             lessons = session.query(Lesson).filter(Lesson.weekday==weekday, Lesson.hour==hour).all()
 
 
-            print('{}, {}. Stunde'.format(weekday_name, hour))
+
+            if options.latex:
+                print(r'\section*{{ {}, {}. Stunde}}'.format(weekday_name, hour))
+                print(r'''
+                      \begin{longtable}{lllll}
+                      Klasse & Fach & Lehrer & Raum & Doppelstunde \\
+                      \midrule
+                      \endhead''')
+            else:
+                print('{}, {}. Stunde'.format(weekday_name, hour))
             for lesson in lessons:
-                print('{:8s} {:8s} {:8s} {:8s}'.format(lesson.form.name, lesson.subject.name, lesson.teacher.name, lesson.room.name))
+                if lesson.subject.interesting < options.min_interest:
+                    continue
+
+                is_double = session.query(Lesson).filter(
+                    Lesson.weekday==lesson.weekday,
+                    Lesson.hour==lesson.hour+1,
+                    Lesson.teacher==lesson.teacher,
+                    Lesson.room==lesson.room,
+                    Lesson.subject==lesson.subject,
+                    Lesson.form==lesson.form,
+                ).count() > 0
+                from_double = session.query(Lesson).filter(
+                    Lesson.weekday==lesson.weekday,
+                    Lesson.hour==lesson.hour-1,
+                    Lesson.teacher==lesson.teacher,
+                    Lesson.room==lesson.room,
+                    Lesson.subject==lesson.subject,
+                    Lesson.form==lesson.form,
+                ).count() > 0
+                if is_double and from_double:
+                    double_str = '(-> doppel ->)'
+                elif is_double:
+                    double_str = '(doppel ->)'
+                elif from_double:
+                    double_str = '(-> doppel)'
+                else:
+                    double_str = ''
+
+                format = '{:8s} {:8s} {:8s} {:8s} {}'
+                if options.latex:
+                    format = r'{} & {} & {} & {} & {} \\'
+                
+                print(format.format(lesson.form.name, lesson.subject.name, lesson.teacher.name, lesson.room.name, double_str))
+
+            if options.latex:
+                print(r'''\end{longtable}''')
             print()
 
 
@@ -151,6 +195,8 @@ def _parse_args():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('user', nargs='?')
     parser.add_argument('password', nargs='?')
+    parser.add_argument('--min', dest='min_interest', default=0, type=int)
+    parser.add_argument('--latex', action='store_true')
     options = parser.parse_args()
 
     return options
