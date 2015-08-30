@@ -94,6 +94,7 @@ def parse_form(form_str, text):
                             session.add(room)
 
                         lesson = Lesson(hour=hour, weekday=day, room=room, subject=subject, teacher=teacher, form=form)
+                        session.add(lesson)
 
 
                         session.commit()
@@ -101,33 +102,43 @@ def parse_form(form_str, text):
 
     #print(lxml.etree.tostring(table, pretty_print=True, method='html').decode())
 
-    sys.exit(0)
-
 def main():
     options = _parse_args()
 
-    text = get_url(url_forms, options.user, options.password)
+    if options.user is not None and options.password is not None:
+        session.query(Lesson).delete()
 
-    parser = lxml.etree.HTMLParser()
-    root = lxml.etree.fromstring(text, parser)
+        text = get_url(url_forms, options.user, options.password)
 
-    form_pattern = re.compile(r'stundenplanklassen_0?(\d+\w?).htm')
+        parser = lxml.etree.HTMLParser()
+        root = lxml.etree.fromstring(text, parser)
 
-    table = root.findall('.//table')[1]
-    urls = table.findall('.//a')
+        form_pattern = re.compile(r'stundenplanklassen_0?(\d+\w?).htm')
 
-    for url in urls:
-        href = url.get('href')
+        table = root.findall('.//table')[1]
+        urls = table.findall('.//a')
 
-        full_url = base + href
-        print(full_url)
+        for url in urls:
+            href = url.get('href')
 
-        m = form_pattern.match(href)
+            full_url = base + href
+            print(full_url)
 
-        text = get_url(full_url, options.user, options.password)
-        parse_form(m.group(1), text)
+            m = form_pattern.match(href)
+
+            text = get_url(full_url, options.user, options.password)
+            parse_form(m.group(1), text)
 
 
+    for weekday, weekday_name in zip(itertools.count(1), ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']):
+        for hour in range(1, 13):
+            lessons = session.query(Lesson).filter(Lesson.weekday==weekday, Lesson.hour==hour).all()
+
+
+            print('{}, {}. Stunde'.format(weekday_name, hour))
+            for lesson in lessons:
+                print('{:8s} {:8s} {:8s} {:8s}'.format(lesson.form.name, lesson.subject.name, lesson.teacher.name, lesson.room.name))
+            print()
 
 
 def _parse_args():
@@ -138,8 +149,8 @@ def _parse_args():
     :rtype: Namespace
     '''
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('user')
-    parser.add_argument('password')
+    parser.add_argument('user', nargs='?')
+    parser.add_argument('password', nargs='?')
     options = parser.parse_args()
 
     return options

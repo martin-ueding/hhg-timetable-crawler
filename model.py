@@ -9,7 +9,7 @@ import sqlalchemy.ext.declarative
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-engine = sqlalchemy.create_engine('sqlite:///hhg.sqlite', echo=True)
+engine = sqlalchemy.create_engine('sqlite:///hhg.sqlite')
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
